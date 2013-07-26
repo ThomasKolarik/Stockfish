@@ -1054,21 +1054,20 @@ Value do_evaluate(const Position& pos, Value& margin) {
     // Find the safe squares for our pieces inside the area defined by
     // SpaceMask[]. A square is unsafe if it is attacked by an enemy
     // pawn, or if it is undefended and attacked by an enemy piece.
-    Bitboard safe =   SpaceMask[Us]
-                   & ~pos.pieces(Us, PAWN)
+	Bitboard safe =   SpaceMask[Them]
                    & ~ei.attackedBy[Them][PAWN]
                    & (ei.attackedBy[Us][ALL_PIECES] | ~ei.attackedBy[Them][ALL_PIECES]);
 
-    // Find all squares which are at most three squares behind some friendly pawn
-    Bitboard behind = pos.pieces(Us, PAWN);
-    behind |= (Us == WHITE ? behind >>  8 : behind <<  8);
-    behind |= (Us == WHITE ? behind >> 16 : behind << 16);
-
-    // Since SpaceMask[Us] is fully on our half of the board
-    assert(unsigned(safe >> (Us == WHITE ? 32 : 0)) == 0);
+	//Find squares on the enemy's side of the board that is attacked by
+	//or has a friendly piece on it.
+	Bitboard controlled = SpaceMask[Them]
+						& (pos.pieces(Us,ALL_PIECES) | ei.attackedBy[Us][ALL_PIECES]);
+						
+	//Make sure all the squares are on the enemy's side of the board.
+	assert(unsigned(safe & controlled >> (Us == WHITE ? 0 : 32)) == 0);
 
     // Count safe + (behind & safe) with a single popcount
-    return popcount<Full>((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
+    return popcount<Full>((Us == WHITE ? safe >> 32 : safe << 32) | controlled);
   }
 
 
