@@ -1056,7 +1056,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
     // pawn, or if it is undefended and attacked by an enemy piece.
 	Bitboard safe =   SpaceMask[Them]
                    & ~ei.attackedBy[Them][PAWN]
-                   & (ei.attackedBy[Us][ALL_PIECES] | ~ei.attackedBy[Them][ALL_PIECES]);
+                   & ((ei.attackedBy[Us][ALL_PIECES] | ~ei.attackedBy[Them][ALL_PIECES]) | ei.attackedBy[Us][PAWN]);
 
 	//Find squares on the enemy's side of the board that is attacked by
 	//or has a friendly piece on it.
