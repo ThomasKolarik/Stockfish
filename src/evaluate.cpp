@@ -521,10 +521,19 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
         // Otherwise give a bonus if we are a bishop and can pin a piece or can
         // give a discovered check through an x-ray attack.
-        else if (    Piece == BISHOP
-                 && (PseudoAttacks[Piece][pos.king_square(Them)] & s)
-                 && !more_than_one(BetweenBB[s][pos.king_square(Them)] & pos.pieces()))
-                 score += BishopPin;
+        else if (    Piece == BISHOP)
+		{
+			
+                 if ((PseudoAttacks[Piece][pos.king_square(Them)] & s)
+				 && !more_than_one(BetweenBB[s][pos.king_square(Them)] & pos.pieces()))
+					 score += BishopPin;
+				 //Assume enemy only has one queen.
+				 const Square *Queenposthem = pos.list<QUEEN>(Them);
+				 if (*Queenposthem != SQ_NONE
+				 && (PseudoAttacks[Piece][*Queenposthem] & s)
+				 && !more_than_one(BetweenBB[s][*Queenposthem] & pos.pieces()))
+					score += BishopPin/4;
+		}
 
         // Penalty for bishop with same coloured pawns
         if (Piece == BISHOP)
