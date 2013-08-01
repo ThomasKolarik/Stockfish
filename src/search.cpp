@@ -65,12 +65,12 @@ namespace {
   inline Value razor_margin(Depth d) { return Value(512 + 16 * int(d)); }
 
   // Futility lookup tables (initialized at startup) and their access functions
-  Value FutilityMargins[16][64]; // [depth][moveNumber]
+  Value FutilityMargins[16][64][2]; // [depth][moveNumber][improving]
   int FutilityMoveCounts[2][32]; // [improving][depth]
 
-  inline Value futility_margin(Depth d, int mn) {
+  inline Value futility_margin(Depth d, int mn,bool improving) {
 
-    return d < 7 * ONE_PLY ? FutilityMargins[std::max(int(d), 1)][std::min(mn, 63)]
+    return d < 7 * ONE_PLY ? FutilityMargins[std::max(int(d), 1)][std::min(mn, 63)][improving]
                            : 2 * VALUE_INFINITE;
   }
 
@@ -142,7 +142,9 @@ void Search::init() {
 
   // Init futility margins array
   for (d = 1; d < 16; d++) for (mc = 0; mc < 64; mc++)
-      FutilityMargins[d][mc] = Value(112 * int(log(double(d * d) / 2) / log(2.0) + 1.001) - 8 * mc + 45);
+      FutilityMargins[d][mc][1] = Value(112 * int(log(double(d * d) / 2) / log(2.0) + 1.001) - 8 * mc + 45);
+  for (d = 1; d < 16;d++)for(mc = 0; mc < 64; mc++)
+	  FutilityMargins[d][mc][0] = FutilityMargins[d][std::min(63,5*mc/4)][1];
 
   // Init futility move count array
   for (d = 0; d < 32; d++)
@@ -649,11 +651,11 @@ namespace {
     if (   !PvNode
         && !ss->skipNullMove
         &&  depth < 4 * ONE_PLY
-        &&  eval - futility_margin(depth, (ss-1)->futilityMoveCount) >= beta
+        &&  eval - futility_margin(depth, (ss-1)->futilityMoveCount,true) >= beta
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY
         &&  abs(eval) < VALUE_KNOWN_WIN
         &&  pos.non_pawn_material(pos.side_to_move()))
-        return eval - futility_margin(depth, (ss-1)->futilityMoveCount);
+        return eval - futility_margin(depth, (ss-1)->futilityMoveCount,true);
 
     // Step 8. Null move search with verification search (is omitted in PV nodes)
     if (   !PvNode
@@ -879,7 +881,7 @@ moves_loop: // When in check and at SpNode search starts from here
           // We illogically ignore reduction condition depth >= 3*ONE_PLY for predicted depth,
           // but fixing this made program slightly weaker.
           Depth predictedDepth = newDepth - reduction<PvNode>(depth, moveCount);
-          futilityValue =  ss->staticEval + ss->evalMargin + futility_margin(predictedDepth, moveCount)
+          futilityValue =  ss->staticEval + ss->evalMargin + futility_margin(predictedDepth, moveCount,improving)
                          + Gains[pos.piece_moved(move)][to_sq(move)];
 
           if (futilityValue < beta)
