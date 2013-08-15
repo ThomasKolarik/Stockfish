@@ -156,7 +156,7 @@ void Search::init() {
   for (d = 1; d < 16; d++) for (mc = 0; mc < 64; mc++)
       FutilityMargins[d][mc] = Value(112 * int(log(double(d * d) / 2) / log(2.0) + 1.001) - 8 * mc + 45);
   for (d = 1; d < 8; d++) for (mc = 0; mc < 64; mc++)
-	  FutilityMarginsCap[d][mc] = Value(std::max(int(FutilityMargins[d][mc]),0));
+	  FutilityMarginsCap[d][mc] = Value(std::max(int(FutilityMargins[d][mc]),128));
   // Init futility move count array
   for (d = 0; d < 32; d++)
   {
