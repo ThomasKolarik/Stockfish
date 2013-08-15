@@ -67,11 +67,17 @@ namespace {
   // Futility lookup tables (initialized at startup) and their access functions
   Value FutilityMargins[16][64]; // [depth][moveNumber]
   int FutilityMoveCounts[2][32]; // [improving][depth]
+  Value FutilityMarginsCap[8][64];
 
   inline Value futility_margin(Depth d, int mn) {
 
     return d < 7 * ONE_PLY ? FutilityMargins[std::max(int(d), 1)][std::min(mn, 63)]
                            : 2 * VALUE_INFINITE;
+  }
+
+  inline Value futility_margin_cap(Depth d, int mn) {
+
+    return  FutilityMarginsCap[d][std::min(mn, 63)];
   }
 
   // Reduction lookup tables (initialized at startup) and their access function
@@ -149,7 +155,8 @@ void Search::init() {
   // Init futility margins array
   for (d = 1; d < 16; d++) for (mc = 0; mc < 64; mc++)
       FutilityMargins[d][mc] = Value(112 * int(log(double(d * d) / 2) / log(2.0) + 1.001) - 8 * mc + 45);
-
+  for (d = 1; d < 8; d++) for (mc = 0; mc < 64; mc++)
+	  FutilityMarginsCap[d][mc] = Value(std::max(int(FutilityMargins[d][mc]),0));
   // Init futility move count array
   for (d = 0; d < 32; d++)
   {
@@ -918,6 +925,29 @@ moves_loop: // When in check and at SpNode search starts from here
           // far in the move list we are to be more aggressive in the child node.
           ss->futilityMoveCount = moveCount;
       }
+	  else if ( !PvNode
+			 &&  pos.is_capture(move)
+			 && !inCheck
+			 && !dangerous
+			 &&  bestValue > VALUE_MATED_IN_MAX_PLY
+			 &&  depth < 4 * ONE_PLY
+			 && !improving)
+			 {
+			 futilityValue =  ss->staticEval + ss->evalMargin + futility_margin_cap(depth, moveCount)
+                         + Gains[pos.piece_moved(move)][to_sq(move)] + PieceValue[EG][pos.piece_on(to_sq(move))]
+                         + (type_of(move) == ENPASSANT ? PawnValueEg : VALUE_ZERO);
+
+			  if ( futilityValue < beta
+				&& pos.see_sign(move) < 0
+				 )
+				 {
+					if (SpNode)
+						splitPoint->mutex.lock();
+
+					continue;
+				 }
+		   ss->futilityMoveCount = 0;
+	  }
       else
           ss->futilityMoveCount = 0;
 
