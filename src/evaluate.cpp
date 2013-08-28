@@ -290,7 +290,7 @@ namespace Eval {
     Weights[KingDangerUs]   = weight_option("Cowardice", "Cowardice", WeightsInternal[KingDangerUs]);
     Weights[KingDangerThem] = weight_option("Aggressiveness", "Aggressiveness", WeightsInternal[KingDangerThem]);
 
-    const int MaxSlope = 30;
+    const int MaxSlope = 25;
     const int Peak = 1280;
 
     for (int t = 0, i = 1; i < 100; i++)
