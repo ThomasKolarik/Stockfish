@@ -295,7 +295,7 @@ namespace Eval {
 
     for (int t = 0, i = 1; i < 100; i++)
     {
-        t = std::min(Peak, std::min(int(0.45 * i * i), t + MaxSlope));
+        t = std::min(Peak, std::min(int(0.35 * i * i), t + MaxSlope));
 
         KingDanger[1][i] = apply_weight(make_score(t, 0), Weights[KingDangerUs]);
         KingDanger[0][i] = apply_weight(make_score(t, 0), Weights[KingDangerThem]);
