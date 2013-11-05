@@ -74,6 +74,11 @@ namespace {
 
   // Reduction lookup tables (initialized at startup) and their access function
   int8_t Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
+  Depth NullReductions[201]; //[Depth]
+
+  inline Depth null_reduction(Depth d) {
+	  return NullReductions[d];
+  }
 
   template <bool PvNode> inline Depth reduction(bool i, Depth d, int mn) {
 
@@ -144,6 +149,11 @@ void Search::init() {
 
       else if (Reductions[0][0][hd][mc] > 1 * ONE_PLY)
           Reductions[0][0][hd][mc] += ONE_PLY / 2;
+  }
+  //Init Null Move Array
+  for (hd = 1; hd < 201; ++hd)
+  {
+	  NullReductions[hd] = Depth((3 + (hd >= 5 * ONE_PLY ? hd / 8 : 0))  * ONE_PLY);
   }
 
   // Init futility margins array
@@ -665,7 +675,7 @@ namespace {
         ss->currentMove = MOVE_NULL;
 
         // Null move dynamic reduction based on depth
-        Depth R = 3 * ONE_PLY + depth / 4;
+        Depth R = NullReductions[depth];
 
         // Null move dynamic reduction based on value
         if (eval - PawnValueMg > beta)
@@ -946,14 +956,11 @@ moves_loop: // When in check and at SpNode search starts from here
           if (move == countermoves[0] || move == countermoves[1])
               ss->reduction = std::max(DEPTH_ZERO, ss->reduction - ONE_PLY);
 
-          Depth d = newDepth - ss->reduction;
+          Depth d = std::max(newDepth - ss->reduction, ONE_PLY);
           if (SpNode)
               alpha = splitPoint->alpha;
 
-          value = d < ONE_PLY ? 
-				   givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
-                              : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
-							  : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, !cutNode);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && ss->reduction != DEPTH_ZERO);
           ss->reduction = DEPTH_ZERO;
