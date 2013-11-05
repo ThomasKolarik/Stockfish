@@ -821,8 +821,7 @@ moves_loop: // When in check and at SpNode search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       givesCheck = pos.gives_check(move, ci);
       dangerous =   givesCheck
-                 || pos.passed_pawn_push(move)
-                 || type_of(move) == CASTLE;
+                 || pos.passed_pawn_push(move);
 
       // Step 12. Extend checks
       if (givesCheck && pos.see_sign(move) >= 0)
@@ -860,6 +859,7 @@ moves_loop: // When in check and at SpNode search starts from here
           && !captureOrPromotion
           && !inCheck
           && !dangerous
+		  && type_of(move) != CASTLE
        /* &&  move != ttMove Already implicit in the next condition */
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
@@ -931,6 +931,7 @@ moves_loop: // When in check and at SpNode search starts from here
       if (    depth >= 3 * ONE_PLY
           && !pvMove
           && !captureOrPromotion
+		  &&  type_of(move) != CASTLE
           &&  move != ttMove
           &&  move != ss->killers[0]
           &&  move != ss->killers[1])
