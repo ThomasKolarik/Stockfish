@@ -821,7 +821,8 @@ moves_loop: // When in check and at SpNode search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       givesCheck = pos.gives_check(move, ci);
       dangerous =   givesCheck
-                 || pos.passed_pawn_push(move);
+                 || pos.passed_pawn_push(move)
+                 || type_of(move) == CASTLE;
 
       // Step 12. Extend checks
       if (givesCheck && pos.see_sign(move) >= 0)
@@ -859,7 +860,6 @@ moves_loop: // When in check and at SpNode search starts from here
           && !captureOrPromotion
           && !inCheck
           && !dangerous
-		  && type_of(move) != CASTLE
        /* &&  move != ttMove Already implicit in the next condition */
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
@@ -931,7 +931,6 @@ moves_loop: // When in check and at SpNode search starts from here
       if (    depth >= 3 * ONE_PLY
           && !pvMove
           && !captureOrPromotion
-		  &&  type_of(move) != CASTLE
           &&  move != ttMove
           &&  move != ss->killers[0]
           &&  move != ss->killers[1])
@@ -947,11 +946,14 @@ moves_loop: // When in check and at SpNode search starts from here
           if (move == countermoves[0] || move == countermoves[1])
               ss->reduction = std::max(DEPTH_ZERO, ss->reduction - ONE_PLY);
 
-          Depth d = std::max(newDepth - ss->reduction, ONE_PLY);
+          Depth d = newDepth - ss->reduction;
           if (SpNode)
               alpha = splitPoint->alpha;
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
+          value = d < ONE_PLY ? 
+				   givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+                              : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+							  : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, !cutNode);
 
           doFullDepthSearch = (value > alpha && ss->reduction != DEPTH_ZERO);
           ss->reduction = DEPTH_ZERO;
