@@ -177,6 +177,10 @@ namespace {
   const Score TrappedRook      = make_score(90,  0);
   const Score Unstoppable      = make_score( 0, 20);
 
+    // Bonus for file distance of the two outermost pawns
+  const Score PawnsFileSpan       = make_score(0, 12);
+  const Score PawnsFileSpanKnight = make_score(0, 18);
+
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
   // happen in Chess960 games.
@@ -206,6 +210,8 @@ namespace {
   const int RookCheck         = 8;
   const int BishopCheck       = 2;
   const int KnightCheck       = 3;
+
+
 
   // KingExposed[Square] contains penalties based on the position of the
   // defending king, indexed by king's square (from white's point of view).
@@ -329,7 +335,11 @@ Value do_evaluate(const Position& pos) {
 
   // Probe the pawn hash table
   ei.pi = Pawns::probe(pos, th->pawnsTable);
-  score += apply_weight(ei.pi->pawns_value(), Weights[PawnStructure]);
+  // In endgame it's better to have pawns on both wings. So give a bonus according
+  // to file distance between left and right outermost pawns.
+  Score SpansValue = evaluate_pawn_spans<WHITE>(pos,ei) - evaluate_pawn_spans<BLACK>(pos,ei);
+
+  score += apply_weight(ei.pi->pawns_value() + SpansValue, Weights[PawnStructure]);
 
   // Initialize attack and king safety bitboards
   init_eval_info<WHITE>(pos, ei);
@@ -596,6 +606,7 @@ Value do_evaluate(const Position& pos) {
 
     return score;
   }
+
 
 
   // evaluate_pieces_of_color() assigns bonuses and penalties to all the
@@ -935,6 +946,23 @@ Value do_evaluate(const Position& pos) {
 
     // Count safe + (behind & safe) with a single popcount
     return popcount<Full>((Us == WHITE ? safe << 32 : safe >> 32) | (behind & safe));
+  }
+
+  // evaluate_pawn_spans() computes the span value for our pawns using a simple rule: 
+  // The further apart our pawns are during the endgame the harder they are to stop.
+  template<Color Us>
+  Score evaluate_pawn_spans(const Position& pos, EvalInfo& ei)
+  {
+	 const Color Them = (Us == WHITE ? BLACK : WHITE);
+	 Bitboard b;
+	 Score SpansValue = Score(0);
+	 if (pos.count<PAWN>(Us) > 1)
+	 {
+		b = ei.pi->semiopenFiles[Us] ^ 0xFF;
+		SpansValue += pos.non_pawn_material(Them) <= KnightValueMg ? PawnsFileSpanKnight * int(msb(b) - lsb(b)):PawnsFileSpan * int(msb(b) - lsb(b));
+	 }
+
+	 return SpansValue;
   }
 
 
