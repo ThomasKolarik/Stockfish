@@ -252,6 +252,9 @@ namespace {
   template<Color Us>
   int evaluate_space(const Position& pos, const EvalInfo& ei);
 
+  template<Color Us>
+  Score evaluate_pawn_spans(const Position& pos, EvalInfo& ei);
+
   Score evaluate_unstoppable_pawns(const Position& pos, Color us, const EvalInfo& ei);
 
   Value interpolate(const Score& v, Phase ph, ScaleFactor sf);
@@ -337,7 +340,8 @@ Value do_evaluate(const Position& pos) {
   ei.pi = Pawns::probe(pos, th->pawnsTable);
   // In endgame it's better to have pawns on both wings. So give a bonus according
   // to file distance between left and right outermost pawns.
-  Score SpansValue = evaluate_pawn_spans<WHITE>(pos,ei) - evaluate_pawn_spans<BLACK>(pos,ei);
+  Score SpansValue = evaluate_pawn_spans<WHITE>(pos,ei)
+	               - evaluate_pawn_spans<BLACK>(pos,ei);
 
   score += apply_weight(ei.pi->pawns_value() + SpansValue, Weights[PawnStructure]);
 
