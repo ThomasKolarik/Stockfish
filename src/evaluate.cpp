@@ -171,6 +171,8 @@ namespace {
   const Score MinorBehindPawn  = make_score(16,  0);
   const Score TrappedRook      = make_score(90,  0);
   const Score Unstoppable      = make_score( 0, 20);
+  const Score QueenTropism     = make_score(50, 50);
+  const Score RookTropism      = make_score(25, 25);
 
   // Penalty for a bishop on a1/h1 (a8/h8 for black) which is trapped by
   // a friendly pawn on b2/g2 (b7/g7 for black). This can obviously only
@@ -328,6 +330,18 @@ namespace {
         // of threat evaluation must be done later when we have full attack info.
         if (ei.attackedBy[Them][PAWN] & s)
             score -= ThreatenedByPawn[Pt];
+		else if (Pt == QUEEN)
+		{
+			if (!(pos.pieces(Them, PAWN) & pawn_attack_span(Us, s)))
+				score += QueenTropism / square_distance(pos.king_square(Them), s);
+				
+		}
+		else if (Pt == ROOK)
+		{
+			if (!(pos.pieces(Them, PAWN) & pawn_attack_span(Us, s)))
+				score += RookTropism / square_distance(pos.king_square(Them), s);
+		}
+
 
         if (Pt == BISHOP || Pt == KNIGHT)
         {
