@@ -116,24 +116,23 @@ namespace {
 /// Search::init() is called during startup to initialize various lookup tables
 
 void Search::init() {
-  int S1 = Options["S1"];
-  int S2 = Options["S2"];
-  int S3 = Options["S3"];
+
   // Init reductions array
   for (int d = 1; d < 64; ++d)
       for (int mc = 1; mc < 64; ++mc)
       {
-          double    pvRed = 0.00 + log(double(d)) * log(double(mc)) / (S1 / 1000.0);
-          double nonPVRed = 0.33 + log(double(d)) * log(double(mc)) / (S2 / 1000.0);
-		  double nonimpnonPVRed = 0.33 + log(double(d)) * log(double(mc)) / (S3 / 1000.0);
+          double    pvRed = 0.00 + log(double(d)) * log(double(mc)) / 3.00;
+          double nonPVRed = 0.33 + log(double(d)) * log(double(mc)) / 2.25;
 
           Reductions[1][1][d][mc] = int8_t(   pvRed >= 1.0 ?    pvRed + 0.5: 0);
           Reductions[0][1][d][mc] = int8_t(nonPVRed >= 1.0 ? nonPVRed + 0.5: 0);
-		  Reductions[0][0][d][mc] = int8_t(nonimpnonPVRed >= 1.0 ? nonPVRed + 0.5 : 0);
 
           Reductions[1][0][d][mc] = Reductions[1][1][d][mc];
+          Reductions[0][0][d][mc] = Reductions[0][1][d][mc];
 
           // Increase reduction when eval is not improving
+          if (Reductions[0][0][d][mc] >= 2)
+              Reductions[0][0][d][mc] += 1;
       }
 
   // Init futility move count array
