@@ -65,6 +65,9 @@ void init(OptionsMap& o) {
   o["Minimum Thinking Time"] << Option(20, 0, 5000);
   o["Slow Mover"]            << Option(80, 10, 1000);
   o["UCI_Chess960"]          << Option(false);
+  o["S1"] << Option(3000, 1, 10000);
+  o["S2"] << Option(2250, 1, 10000);
+  o["S3"] << Option(2250, 1, 10000);
 }
 
 
